@@ -1,3 +1,11 @@
+.vs
+.idea
+.vscode
+
+build
+out
+include/nlohmann
+
 # Prerequisites
 *.d
 
