@@ -489,7 +489,7 @@ namespace xt_test
         // 过滤速度测试
         std::cout << "filter speed 1 test start" << std::endl;
 
-        xt::xarray<double> arr = xt::arange(1000000);
+        xt::xarray<int> arr = xt::arange(1000000);
         xt::xarray<bool> mask = xt::random::randint<int>({1000000}, 0, 2);
         size_t count = xt::sum(mask)();
         std::cout << "count: " << count << std::endl;
@@ -506,9 +506,10 @@ namespace xt_test
         auto xt3 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
         // xt for loop + 预留空间
-        xt::xarray<double> xres3 = xt::empty<double>({count});
+        xt::xarray<int> xres3 = xt::empty<int>({count});
         size_t current_index = 0;
-        for (size_t i = 0; i < arr.size(); ++i) {
+        for (size_t i = 0; i < arr.size(); ++i)
+        {
             if (mask(i))
                 xres3(current_index++) = arr(i);
         }
@@ -519,7 +520,7 @@ namespace xt_test
         // -------------------- for loop -------------------- //
         auto ft1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         // for loop 1
-        std::vector<double> res_vec1;
+        std::vector<int> res_vec1;
         for (int i = 0; i < arr.size(); i++)
         {
             if (mask(i))
@@ -529,7 +530,7 @@ namespace xt_test
         auto ft2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
         // for loop 2
-        std::vector<double> res_vec2;
+        std::vector<int> res_vec2;
         // 关键优化：预估大小并预留空间，避免重复内存分配
         res_vec2.reserve(count);
         for (int i = 0; i < arr.size(); i++)
@@ -544,18 +545,19 @@ namespace xt_test
         // -------------------- copy_if -------------------- //
         auto ct1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         // 关键优化：预估大小并预留空间，避免重复内存分配
-        std::vector<double> res_vec3;
+        std::vector<int> res_vec3;
         // 关键优化：预分配内存对于 std::copy_if + std::back_inserter 同样重要！
         res_vec3.reserve(count);
 
         // 使用 std::copy_if 实现
         std::copy_if(arr.begin(), arr.end(), std::back_inserter(res_vec3),
-            [&](double const& value) {
-                // 通过指针运算计算当前元素的索引
-                // 这依赖于 xt::xarray 的数据是连续存储的
-                auto index = &value - arr.data();
-                return mask(index);
-            });
+                     [&](int const &value)
+                     {
+                         // 通过指针运算计算当前元素的索引
+                         // 这依赖于 xt::xarray 的数据是连续存储的
+                         auto index = &value - arr.data();
+                         return mask(index);
+                     });
 
         auto cres1 = xt::adapt(res_vec3);
         auto ct2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -574,12 +576,12 @@ namespace xt_test
         std::cout << "xres1 == cres1: " << (xres1 == cres1) << std::endl;
 
         // count: 499887
-        // xt::filter time: 87 ms
-        // xt::where filter time: 20 ms
-        // xt for loop filter time: 8 ms
-        // for loop 1 filter time: 12 ms
-        // for loop 2 filter time: 7 ms
-        // copy_if time: 7 ms
+        // xt::filter time: 62 ms
+        // xt::where filter time: 17 ms
+        // xt for loop filter time: 6 ms
+        // for loop 1 filter time: 8 ms
+        // for loop 2 filter time: 6 ms
+        // copy_if time: 6 ms
         // xres1 == xres2: 1
         // xres1 == xres3: 1
         // xres1 == fres1: 1
@@ -587,6 +589,95 @@ namespace xt_test
         // xres1 == cres1: 1
 
         std::cout << "filter speed 1 test end\n"
+                  << std::endl;
+    }
+
+    void filter_speed_test2()
+    {
+        // 过滤速度测试
+        std::cout << "filter speed 2 test start" << std::endl;
+        xt::xarray<int> _arr = xt::random::randint<int>({1000, 1000}, 0, 256);
+        // auto arr1 = xt::flatten(xt::transpose(_arr));
+        // xt::xarray<int> 显示指定类型避免惰性计算
+        xt::xarray<int> arr1 = xt::flatten(xt::transpose(_arr));
+        int ratio = 20;
+        // auto arr2 = xt::flatten(xt::transpose(_arr));
+        // xt::xarray<int> 显示指定类型避免惰性计算
+        xt::xarray<int> arr2 = xt::flatten(xt::transpose(_arr));
+        xt::xarray<bool> mask = xt::random::randint<int>({1000000}, 0, 2);
+        size_t count = xt::sum(mask)();
+        std::cout << "count: " << count << std::endl;
+
+        // -------------------- xtensor -------------------- //
+        // xt::filter
+        auto xt1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        auto xres1 = xt::filter(arr1, mask) * ratio + xt::filter(arr2, mask);
+        auto xt2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        // xt::where
+        auto index = xt::where(mask);
+        auto xres2 = xt::index_view(arr1, index[0]) * ratio + xt::index_view(arr2, index[0]);
+        auto xt3 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        // xt for loop + 预留空间
+        xt::xarray<int> xres3 = xt::empty<int>({count});
+        size_t current_index = 0;
+        for (size_t i = 0; i < arr1.size(); ++i)
+        {
+            if (mask(i))
+                xres3(current_index++) = arr1(i) * ratio + arr2(i);
+        }
+        xt::eval(xres3);
+        auto xt4 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // -------------------- xtensor -------------------- //
+
+        // -------------------- for loop -------------------- //
+        auto ft1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // for loop 1
+        std::vector<int> res_vec1;
+        for (int i = 0; i < arr1.size(); i++)
+        {
+            if (mask(i))
+                res_vec1.push_back(arr1(i) * ratio + arr2(i));
+        }
+        auto fres1 = xt::adapt(res_vec1);
+        auto ft2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        // for loop 2
+        std::vector<int> res_vec2;
+        // 关键优化：预估大小并预留空间，避免重复内存分配
+        res_vec2.reserve(count);
+        for (int i = 0; i < arr1.size(); i++)
+        {
+            if (mask(i))
+                res_vec2.push_back(arr1(i) * ratio + arr2(i));
+        }
+        auto fres2 = xt::adapt(res_vec2);
+        auto ft3 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // -------------------- for loop -------------------- //
+
+        std::cout << "xt::filter time: " << xt2 - xt1 << " ms" << std::endl;
+        std::cout << "xt::where filter time: " << xt3 - xt2 << " ms" << std::endl;
+        std::cout << "xt for loop filter time: " << xt4 - xt3 << " ms" << std::endl;
+        std::cout << "for loop 1 filter time: " << ft2 - ft1 << " ms" << std::endl;
+        std::cout << "for loop 2 filter time: " << ft3 - ft2 << " ms" << std::endl;
+        std::cout << "xres1 == xres2: " << (xres1 == xres2) << std::endl;
+        std::cout << "xres1 == xres3: " << (xres1 == xres3) << std::endl;
+        std::cout << "xres1 == fres1: " << (xres1 == fres1) << std::endl;
+        std::cout << "xres1 == fres2: " << (xres1 == fres2) << std::endl;
+
+        // count: 499131
+        // xt::filter time: 155 ms
+        // xt::where filter time: 19 ms
+        // xt for loop filter time: 8 ms
+        // for loop 1 filter time: 8 ms
+        // for loop 2 filter time: 6 ms
+        // xres1 == xres2: 1
+        // xres1 == xres3: 1
+        // xres1 == fres1: 1
+        // xres1 == fres2: 1
+
+        std::cout << "filter speed 2 test end\n"
                   << std::endl;
     }
 
@@ -1273,9 +1364,14 @@ namespace xt_test
 
         // indices[0] 包含行索引
         // indices[1] 包含列索引
-        // std::cout << "indices: " << indices << std::endl;
-        // std::cout << "Row indices: " << indices[0] << std::endl;
-        // std::cout << "Column indices: " << indices[1] << std::endl;
+        std::cout << "Row indices: ";
+        for (auto i : indices[0])
+            std::cout << i << " ";
+        std::cout << std::endl;
+        std::cout << "Column indices: ";
+        for (auto i : indices[1])
+            std::cout << i << " ";
+        std::cout << std::endl;
 
         // 使用这些索引访问原始元素
         // 使用 index_view 时，要将所有数据看作一维数据
@@ -1321,29 +1417,29 @@ namespace xt_test
         //   75.,   76.,   77.,   78.,   79.,   80.,   81.,   82.,   83.,   84.,   85.,   86.,   87.,   88.,   89.,
         //   90.,   91.,   92.,   93.,   94.,   95.,   96.,   97.,   98.,   99.,  100.}
 
-        xt::xarray<double> q = xt::quantile(arr, { 0.5 }, 0);
+        xt::xarray<double> q = xt::quantile(arr, {0.5}, 0);
         std::cout << "quantile 0.5: " << q << std::endl;
         // quantile 0.5: { 50.}
 
-        q = xt::quantile(arr, { 0 }, 0);
+        q = xt::quantile(arr, {0}, 0);
         std::cout << "quantile 0.0: " << q << std::endl;
         // quantile 0.0 : { 0.}
 
-        q = xt::quantile(arr, { 0.95 }, 0);
+        q = xt::quantile(arr, {0.95}, 0);
         std::cout << "quantile 0.95: " << q << std::endl;
         // quantile 0.95 : { 95.        }
 
-        q = xt::quantile(arr, { 0.05, 0.95 }, 0);
+        q = xt::quantile(arr, {0.05, 0.95}, 0);
         std::cout << "quantile 0.05, 0.95: " << q << std::endl;
         // quantile 0.05, 0.95 : {  5., 95.        }
 
         arr = xt::logspace<double>(0, 2, 10);
         std::cout << "arr:\n"
-            << arr << std::endl;
+                  << arr << std::endl;
         //{   1.        ,    1.66810054,    2.7825594 ,    4.64158883,    7.74263683,   12.91549665,
         //   21.5443469 ,   35.93813664,   59.94842503,  100.        }
 
-        q = xt::quantile(arr, { 0.0, 0.5, 0.95, 1.0 }, 0);
+        q = xt::quantile(arr, {0.0, 0.5, 0.95, 1.0}, 0);
         std::cout << "quantile 0.0, 0.5, 0.95, 1.0: " << q << std::endl;
         // quantile 0.0, 0.5, 0.95, 1.0: {   1.        ,   10.32906674,   81.97679126,  100.        }
 
