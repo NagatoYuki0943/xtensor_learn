@@ -484,35 +484,109 @@ namespace xt_test
                   << std::endl;
     }
 
-    void filter_speed_test()
+    void filter_speed_test1()
     {
         // 过滤速度测试
-        std::cout << "filter speed test start" << std::endl;
+        std::cout << "filter speed 1 test start" << std::endl;
 
         xt::xarray<double> arr = xt::arange(1000000);
         xt::xarray<bool> mask = xt::random::randint<int>({1000000}, 0, 2);
+        size_t count = xt::sum(mask)();
+        std::cout << "count: " << count << std::endl;
 
-        auto t1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        auto res1 = xt::filter(arr, mask);
-        auto t2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        std::cout << "xt::filter time: " << t2 - t1 << " ms" << std::endl;
+        // -------------------- xtensor -------------------- //
+        // xt::filter
+        auto xt1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        auto xres1 = xt::filter(arr, mask);
+        auto xt2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-        std::vector<double> res_vec;
-        for (int i = 0; i < arr.shape()[0]; i++)
+        // xt::where
+        auto index = xt::where(mask);
+        auto xres2 = xt::index_view(arr, index[0]);
+        auto xt3 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        // xt for loop + 预留空间
+        xt::xarray<double> xres3 = xt::empty<double>({count});
+        size_t current_index = 0;
+        for (size_t i = 0; i < arr.size(); ++i) {
+            if (mask(i))
+                xres3(current_index++) = arr(i);
+        }
+        xt::eval(xres3);
+        auto xt4 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // -------------------- xtensor -------------------- //
+
+        // -------------------- for loop -------------------- //
+        auto ft1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // for loop 1
+        std::vector<double> res_vec1;
+        for (int i = 0; i < arr.size(); i++)
         {
             if (mask(i))
-                res_vec.push_back(arr(i));
+                res_vec1.push_back(arr(i));
         }
-        auto res2 = xt::adapt(res_vec);
-        auto t3 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        auto fres1 = xt::adapt(res_vec1);
+        auto ft2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-        std::cout << "for loop filter time: " << t3 - t2 << " ms" << std::endl;
+        // for loop 2
+        std::vector<double> res_vec2;
+        // 关键优化：预估大小并预留空间，避免重复内存分配
+        res_vec2.reserve(count);
+        for (int i = 0; i < arr.size(); i++)
+        {
+            if (mask(i))
+                res_vec2.push_back(arr(i));
+        }
+        auto fres2 = xt::adapt(res_vec2);
+        auto ft3 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // -------------------- for loop -------------------- //
 
-        std::cout << "res1.size = " << res1.size() << std::endl;
-        std::cout << "res2.szie = " << res2.size() << std::endl;
-        std::cout << "res1 == res2: " << (res1 == res2) << std::endl;
+        // -------------------- copy_if -------------------- //
+        auto ct1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // 关键优化：预估大小并预留空间，避免重复内存分配
+        std::vector<double> res_vec3;
+        // 关键优化：预分配内存对于 std::copy_if + std::back_inserter 同样重要！
+        res_vec3.reserve(count);
 
-        std::cout << "filter speed test end\n"
+        // 使用 std::copy_if 实现
+        std::copy_if(arr.begin(), arr.end(), std::back_inserter(res_vec3),
+            [&](double const& value) {
+                // 通过指针运算计算当前元素的索引
+                // 这依赖于 xt::xarray 的数据是连续存储的
+                auto index = &value - arr.data();
+                return mask(index);
+            });
+
+        auto cres1 = xt::adapt(res_vec3);
+        auto ct2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // -------------------- copy_if -------------------- //
+
+        std::cout << "xt::filter time: " << xt2 - xt1 << " ms" << std::endl;
+        std::cout << "xt::where filter time: " << xt3 - xt2 << " ms" << std::endl;
+        std::cout << "xt for loop filter time: " << xt4 - xt3 << " ms" << std::endl;
+        std::cout << "for loop 1 filter time: " << ft2 - ft1 << " ms" << std::endl;
+        std::cout << "for loop 2 filter time: " << ft3 - ft2 << " ms" << std::endl;
+        std::cout << "copy_if time: " << ct2 - ct1 << " ms" << std::endl;
+        std::cout << "xres1 == xres2: " << (xres1 == xres2) << std::endl;
+        std::cout << "xres1 == xres3: " << (xres1 == xres3) << std::endl;
+        std::cout << "xres1 == fres1: " << (xres1 == fres1) << std::endl;
+        std::cout << "xres1 == fres2: " << (xres1 == fres2) << std::endl;
+        std::cout << "xres1 == cres1: " << (xres1 == cres1) << std::endl;
+
+        // count: 499887
+        // xt::filter time: 87 ms
+        // xt::where filter time: 20 ms
+        // xt for loop filter time: 8 ms
+        // for loop 1 filter time: 12 ms
+        // for loop 2 filter time: 7 ms
+        // copy_if time: 7 ms
+        // xres1 == xres2: 1
+        // xres1 == xres3: 1
+        // xres1 == fres1: 1
+        // xres1 == fres2: 1
+        // xres1 == cres1: 1
+
+        std::cout << "filter speed 1 test end\n"
                   << std::endl;
     }
 

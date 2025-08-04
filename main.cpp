@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     xt_test::calc();
     xt_test::compare();
     xt_test::filter();
-    xt_test::filter_speed_test();
+    xt_test::filter_speed_test1();
     xt_test::row_col();
     xt_test::get_item();
     xt_test::view();
