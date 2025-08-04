@@ -68,8 +68,14 @@ target_compile_options(main PRIVATE
     $<$<AND:$<PLATFORM_ID:Windows>,$<CXX_COMPILER_ID:MSVC>>:/bigobj>
     $<$<AND:$<PLATFORM_ID:Windows>,$<CXX_COMPILER_ID:MSVC>>:/utf-8>
     $<$<AND:$<PLATFORM_ID:Windows>,$<CXX_COMPILER_ID:GNU>>:-Wa,-mbig-obj>
+    # 优化
     $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/O2> # MSVC: O1:最小化体积 /O2:最大化速度 /Od: 关闭优化
     $<$<AND:$<CONFIG:Release>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-O3> # 其他编译器(GCC/Clang): Os: 优化大小 O3: 优化速度
+    # 指令集优化
+    # $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/arch:AVX> # 为 MSVC 启用 AVX
+    $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/arch:AVX2> # 为 MSVC 启用 AVX2
+    # $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/arch:AVX512> # 为 MSVC 启用 AVX512
+    $<$<AND:$<CONFIG:Release>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-march=native> # 其他编译器(GCC/Clang): -march=native: 自动选择最适合本机的指令集
 )
 
 # 使用链接器垃圾回收
