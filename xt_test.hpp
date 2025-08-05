@@ -847,6 +847,8 @@ namespace xt_test
     void index_view()
     {
         std::cout << "index_view start" << std::endl;
+        // index_view 取出数组中指定位置的值
+        // 注意返回的是一个一维数据
 
         xt::xarray<double> a = {
             1., 2., 3., 4., 5., 6., 7., 8., 9., 10.};
@@ -857,20 +859,24 @@ namespace xt_test
         std::cout << xt::index_view(a, b) << std::endl;
         // { 2., 4., 6., 8., 10. }
 
-        a = {{1, 2, 3},
-             {4, 5, 6}};
-        b = xt::index_view(a, {{0, 0}, {0, 1}, {1, 1}});
-        std::cout << b << std::endl;
-        // {1, 2, 5}
+        // 取多维数据
+        a = {
+            {1, 2, 3},
+            {4, 5, 6},
+        };
+        std::cout << xt::index_view(a, {{0, 0}, {0, 1}, {1, 1}}) << std::endl;
+        // { 1.,  2.,  5.}
 
-        b = {{0, 0}, {0, 1}, {1, 1}};
-        // 注意返回的是一个一维数据, 是把 x1 和 b 都展平, 然后根据 b 的值取出对应位置的值
-        std::cout << xt::index_view(a, b) << std::endl;
-        // { 1.,  1.,  1.,  2.,  2.,  2.}
-
-        // 这种写法可以避免取出有问题的数据
-        std::vector<std::array<size_t, 2>> b1 = {{0, 0}, {0, 1}, {1, 1}};
+        xt::xarray<int> b1 = {{0, 0}, {0, 1}, {1, 1}};
         std::cout << xt::index_view(a, b1) << std::endl;
+        // { 1.,  2.,  5.}
+
+        std::vector<std::vector<int>> b2 = {{0, 0}, {0, 1}, {1, 1}};
+        std::cout << xt::index_view(a, b2) << std::endl;
+        // { 1.,  2.,  5.}
+
+        std::vector<std::array<int, 2>> b3 = {{0, 0}, {0, 1}, {1, 1}};
+        std::cout << xt::index_view(a, b3) << std::endl;
         // { 1.,  2.,  5.}
 
         std::cout << "index_view end\n"
@@ -1351,54 +1357,169 @@ namespace xt_test
     void where()
     {
         std::cout << "where start" << std::endl;
+        // where 和 numpy 的 where 类似，返回数组中满足条件的元素的坐标 tuple。
+        // [dim, n]
+        //(维度1的索引, 维度2的索引, ...)
 
         // 创建一个示例数组
         xt::xarray<double> arr = {{1, 2, 3},
                                   {4, 5, 6},
                                   {7, 8, 9}};
 
-        auto arr_flatten = xt::flatten(arr);
         // 找出所有大于5的元素的索引
         // xt::where returns a tuple of coordinate arrays
-        auto indices = xt::where(arr_flatten > 5);
+        // 将数据看成一维数据
+        auto indices = xt::where(arr > 5);
 
         // indices[0] 包含行索引
         // indices[1] 包含列索引
-        std::cout << "Row indices: ";
-        for (auto i : indices[0])
-            std::cout << i << " ";
-        std::cout << std::endl;
-        std::cout << "Column indices: ";
-        for (auto i : indices[1])
-            std::cout << i << " ";
-        std::cout << std::endl;
+        for (int i = 0; i < indices.size(); ++i)
+        {
+            auto indice = indices[i];
+            std::cout << "indice " << i << ": {";
+            for (auto i : indice)
+                std::cout << i << ", ";
+            std::cout << "}" << std::endl;
+        }
+        // indice 0: {1, 2, 2, 2, }
+        // indice 1: {2, 0, 1, 2, }
 
-        // 使用这些索引访问原始元素
-        // 使用 index_view 时，要将所有数据看作一维数据
-        auto values = xt::eval(xt::index_view(arr_flatten, indices[0]));
-        std::cout << "Values: " << values << std::endl;
-        // Values: { 6.,  7.,  8.,  9.}
+        // 使用 index_view 获取对应的值
+        std::cout << "Result1: " << xt::index_view(arr, indices) << std::endl;
+        // Result1: { 9.,  6.} 数据是错误的
+
+        // 可以对 indices 修改格式
+        std::vector<std::vector<int>> indices_t;
+        for (int i = 0; i < indices[0].size(); ++i)
+        {
+            std::vector<int> indice;
+            for (auto j = 0; j < indices.size(); ++j)
+            {
+                indice.push_back(indices[j][i]);
+            }
+            indices_t.push_back(indice);
+        }
+        std::cout << "indices_t: {";
+        for (auto row : indices_t)
+        {
+            std::cout << "{";
+            for (auto i : row)
+                std::cout << i << ", ";
+            std::cout << "}, ";
+        }
+        std::cout << "}" << std::endl;
+        // indices_t: {{1, 2, }, {2, 0, }, {2, 1, }, {2, 2, }, }
+
+        // 再次使用 index_view 获取对应的值
+        std::cout << "Result2: " << xt::index_view(arr, indices_t) << std::endl;
+        // Result2: { 6.,  7.,  8.,  9.}
+
+        // where 配合 index_view 使用时要将数据展平，否则使用 argwhere
+        auto arr_flatten = xt::flatten(arr);
+        auto indices_flatten = xt::where(arr_flatten > 5);
+        for (int i = 0; i < indices_flatten.size(); ++i)
+        {
+            auto indice = indices_flatten[i];
+            std::cout << "indice " << i << ": {";
+            for (auto i : indice)
+                std::cout << i << ", ";
+            std::cout << "}" << std::endl;
+        }
+        // indice 0: {5, 6, 7, 8, }
+        std::cout << "Result3: " << xt::index_view(arr_flatten, indices_flatten[0]) << std::endl;
+        // Result3: { 6.,  7.,  8.,  9.}
 
         xt::xarray<bool> b = {false, true, true, false};
         xt::xarray<int> a1 = {1, 2, 3, 4};
         xt::xarray<int> a2 = {11, 12, 13, 14};
 
-        xt::xarray<int> res = xt::where(b, a1, a2);
-        std::cout << "Result:\n"
-                  << res << std::endl;
-        // {11,  2,  3, 14}
+        std::cout << "Result4: " << xt::where(b, a1, a2) << std::endl;
+        // Result4: {11,  2,  3, 14}
 
         b = b.reshape({2, 2});
         a1 = a1.reshape({2, 2});
         a2 = a2.reshape({2, 2});
 
-        res = xt::where(b, a1, a2);
-        std::cout << "Result:\n"
-                  << res << std::endl;
-        // {{11,  2},
-        //  { 3, 14}}
+        std::cout << "Result5: " << xt::where(b, a1, a2) << std::endl;
+        // Result5: {{11,  2},
+        //           { 3, 14}}
 
         std::cout << "where end\n"
+                  << std::endl;
+    }
+
+    void argwhere()
+    {
+        std::cout << "argwhere start" << std::endl;
+        // argwhere 和 numpy 的 argwhere 类似，返回数组中满足条件的元素的坐标 vector。
+        // [n, dim]
+        // [[维度1， 维度2，...]， [维度1， 维度2，...],...]
+
+        // 创建一个示例数组
+        xt::xarray<double> arr = {{1, 2, 3},
+                                  {4, 5, 6},
+                                  {7, 8, 9}};
+
+        // 找出所有大于5的元素的索引
+        // xt::where returns a tuple of coordinate arrays
+        // 将数据看成一维数据
+        auto indices = xt::argwhere(arr > 5);
+
+        // 返回 n 个列表
+        // 列表中每个值代表一个完整地索引
+        for (int i = 0; i < indices.size(); ++i)
+        {
+            auto indice = indices[i];
+            std::cout << "indice " << i << ": {";
+            for (auto i : indice)
+                std::cout << i << ", ";
+            std::cout << "}" << std::endl;
+        }
+        // indice 0: {1, 2, }
+        // indice 1: {2, 0, }
+        // indice 2: {2, 1, }
+        // indice 3: {2, 2, }
+
+        auto value = xt::index_view(arr, indices);
+        std::cout << "value: "
+                  << value << std::endl;
+        // value: { 6.,  7.,  8.,  9.}
+
+        std::cout << "argwhere end\n"
+                  << std::endl;
+    }
+
+    void flatten_indices()
+    {
+        std::cout << "flatten_indices start" << std::endl;
+
+        // 创建一个示例数组
+        xt::xarray<double> arr = {{1, 2, 3},
+                                  {4, 5, 6},
+                                  {7, 8, 9}};
+
+        auto indices = xt::where(arr > 5);
+
+        // indices[0] 包含行索引
+        // indices[1] 包含列索引
+        for (int i = 0; i < indices.size(); ++i)
+        {
+            auto indice = indices[i];
+            std::cout << "indice " << i << ": {";
+            for (auto i : indice)
+                std::cout << i << ", ";
+            std::cout << "}" << std::endl;
+        }
+        // indice 0: {1, 2, 2, 2, }
+        // indice 1 : {2, 0, 1, 2, }
+
+        // 将多个维度的索引展平为一维索引
+        xt::xarray<int> indices1 = xt::flatten_indices(indices);
+        std::cout << "indices1: "
+                  << indices1 << std::endl;
+        // indices1: {1, 2, 2, 2, 2, 0, 1, 2}
+
+        std::cout << "flatten_indices end\n"
                   << std::endl;
     }
 
@@ -1680,6 +1801,107 @@ namespace xt_test
                   << std::endl;
     }
 
+    void type_convert()
+    {
+        std::cout << "type_convert start" << std::endl;
+
+        // -------------------------- 一维 vector 和 xarray 之间的转换 -------------------------- //
+        std::vector<double> data_vec = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+        std::cout << "original vector array:" << std::endl;
+        for (auto d : data_vec)
+        {
+            std::cout << d << " ";
+        }
+        std::cout << std::endl;
+        // 1 2 3 4 5 6
+
+        // vector 转 xarray
+        xt::xarray<double> data_arr = xt::adapt(data_vec, {data_vec.size()});
+        std::cout << "Converted array:\n"
+                  << data_arr << std::endl;
+        // { 1.,  2.,  3.,  4.,  5.,  6.}
+
+        data_arr = xt::adapt(data_vec, {2, static_cast<int>(data_vec.size() / 2)});
+        std::cout << "Converted array:\n"
+                  << data_arr << std::endl;
+        // {{ 1.,  2.,  3.},
+        //  { 4.,  5.,  6.}}
+
+        std::vector<double> data_vec1(data_arr.begin(), data_arr.end());
+        std::cout << "Converted vector array:" << std::endl;
+        for (auto d : data_vec1)
+        {
+            std::cout << d << " ";
+        }
+        std::cout << std::endl
+                  << std::endl;
+        // 1 2 3 4 5 6
+        // -------------------------- 一维 vector 和 xarray 之间的转换 -------------------------- //
+
+        // -------------------------- 二维 vector 和 xarray 之间的转换 -------------------------- //
+        // 二维 vector
+        std::vector<std::vector<double>> vec_2d = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+        std::cout << "original 2d vector array:" << std::endl;
+        for (const auto &row : vec_2d)
+        {
+            for (auto d : row)
+            {
+                std::cout << d << " ";
+            }
+            std::cout << std::endl;
+        }
+        // 1 2 3
+        // 4 5 6
+
+        // 获取维度
+        std::size_t rows = vec_2d.size();
+        std::size_t cols = vec_2d[0].size();
+
+        // 创建一维临时存储
+        std::vector<double> data_flat;
+        for (const auto &row : vec_2d)
+        {
+            data_flat.insert(data_flat.end(), row.begin(), row.end());
+        }
+
+        // 转换为 xarray
+        xt::xarray<double> data_arr1 = xt::adapt(data_flat, {rows, cols});
+        std::cout << "Converted to xarray:\n"
+                  << data_arr1 << std::endl;
+        //{{ 1.,  2.,  3.},
+        // { 4.,  5.,  6.}}
+
+        // 获取维度
+        rows = data_arr1.shape(0);
+        cols = data_arr1.shape(1);
+
+        // 转换为二维 vector
+        std::vector<std::vector<double>> vec_2d1(rows);
+        for (std::size_t i = 0; i < rows; ++i)
+        {
+            vec_2d1[i].resize(cols);
+            for (std::size_t j = 0; j < cols; ++j)
+            {
+                vec_2d1[i][j] = data_arr1(i, j);
+            }
+        }
+        std::cout << "new 2d vector array:" << std::endl;
+        for (const auto &row : vec_2d1)
+        {
+            for (auto d : row)
+            {
+                std::cout << d << " ";
+            }
+            std::cout << std::endl;
+        }
+        // 1 2 3
+        // 4 5 6
+
+        // -------------------------- 二维 vector 和 xarray 之间的转换 -------------------------- //
+
+        std::cout << "type_convert end\n"
+                  << std::endl;
+    }
 }
 
 #endif // XT_TEST_HPP

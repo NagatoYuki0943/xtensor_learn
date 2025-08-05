@@ -20,6 +20,7 @@ int main(int argc, char* argv[]) {
     xt_test::compare();
     xt_test::filter();
     xt_test::filter_speed_test1();
+    xt_test::filter_speed_test2();
     xt_test::row_col();
     xt_test::get_item();
     xt_test::view();
@@ -32,12 +33,15 @@ int main(int argc, char* argv[]) {
     xt_test::stack();
     xt_test::sort();
     xt_test::where();
+    xt_test::argwhere();
+    xt_test::flatten_indices();
     xt_test::quantile();
     xt_test::eval();
     xt_test::deep_copy();
     xt_test::meshgrid();
     xt_test::triu_tril();
     xt_test::matrix_dot();
+    xt_test::type_convert();
     std::cout << "---------------------------------------- xtensor test ----------------------------------------\n\n" << std::endl;
 
     return 0;
