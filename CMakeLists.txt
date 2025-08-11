@@ -35,6 +35,9 @@ if(MKL_FOUND)
     message("MKL_LIBRARIES: " MKL::MKL)
 endif()
 
+# openblas
+# find_package(OpenBLAS REQUIRED)
+
 # xtensor-blas
 find_package(xtensor-blas REQUIRED)
 if(xtensor-blas_FOUND)
@@ -53,15 +56,18 @@ add_executable(main ${SOURCES})
 # 添加头文件搜索路径
 target_include_directories(main PRIVATE
     ${CMAKE_PREFIX_PATH}/include
-    ${OpenCV_INCLUDE_DIRS}
     include
 )
 
 # 添加链接目录
 target_link_directories(main PRIVATE ${CMAKE_PREFIX_PATH}/lib)
 
+# 添加链接库
+target_link_libraries(main PRIVATE MKL::MKL)
+
 # 添加编译选项
 target_compile_definitions(main PRIVATE HAVE_CMKL=1)
+# target_compile_definitions(main PRIVATE HAVE_CBLAS=1)
 
 # 添加编译器选项
 target_compile_options(main PRIVATE
