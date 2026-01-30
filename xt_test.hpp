@@ -125,6 +125,26 @@ namespace xt_test
                   << std::endl;
     }
 
+    void abs()
+    {
+        std::cout << "abs start" << std::endl;
+
+        xt::xarray<double> x = {1, -2, 3.1, -4.2};
+        std::cout << "x: \n"
+                  << x << std::endl;
+        // x:
+        // { 1. , -2. ,  3.1, -4.2}
+
+        xt::xarray<double> abs_x = xt::abs(x);
+        std::cout << "abs(x): \n"
+                  << abs_x << std::endl;
+        // abs(x):
+        // { 1. ,  2. ,  3.1,  4.2}
+
+        std::cout << "abs end\n"
+                  << std::endl;
+    }
+
     void calc()
     {
         std::cout << "calc start" << std::endl;
@@ -134,17 +154,33 @@ namespace xt_test
             {2.0, 5.0, 7.0},
             {2.0, 5.0, 7.0}};
         x = x + 1.0;
+        std::cout << "x: \n"
+                  << x << std::endl;
 
-        xt::xarray<double> z = add(x, x);
-        std::cout << "z: \n"
-                  << z << std::endl;
+        xt::xarray<double> y = x + x;
+        std::cout << "y: \n"
+                  << y << std::endl;
         //{{  4.,   6.,   8.},
         // {  6.,  12.,  16.},
         // {  6.,  12.,  16.}}
 
+        y = x * x;
+        std::cout << "y: \n"
+                  << y << std::endl;
+        //{{ 4.,   9.,  16.},
+        // { 9.,  36.,  64.},
+        // { 9.,  36.,  64.}}
+
+        y = x / x;
+        std::cout << "y: \n"
+                  << y << std::endl;
+        //{{ 1.,  1.,  1.},
+        // { 1.,  1.,  1.},
+        // { 1.,  1.,  1.}}
+
         x = {1, 2, 3};
-        xt::xarray<double> y = {4, 5, 6};
-        z = add(x, y);
+        y = {4, 5, 6};
+        xt::xarray<double> z = add(x, y);
         std::cout << "z: \n"
                   << z << std::endl;
         // { 5.,  7.,  9.}
@@ -154,10 +190,6 @@ namespace xt_test
             {3.0, 4.0},
             {5.0, 6.0}};
         y = {-1, -2};
-        std::cout << "y: \n"
-                  << y << std::endl;
-        // {-1., -2.}
-
         z = add(x, y);
         std::cout << "z: \n"
                   << z << std::endl;
@@ -176,10 +208,6 @@ namespace xt_test
         //{{ 0.,  0.},
         // { 2.,  2.},
         // { 4.,  4.}}
-
-        //{{ 1.,  2.},
-        // { 3.,  4.},
-        // { 5.,  6.}}
 
         std::cout << "square:\n"
                   << xt::square(x) << std::endl;

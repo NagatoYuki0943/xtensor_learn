@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
     xt_test::basic();
     xt_test::size_shape();
     xt_test::min_max();
+    xt_test::abs();
     xt_test::calc();
     xt_test::compare();
     xt_test::filter();
