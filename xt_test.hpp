@@ -1788,6 +1788,80 @@ namespace xt_test
                   << std::endl;
     }
 
+    xt::xarray<unsigned char> create_square_with_circle(int h, int w, std::vector<double> radii)
+    {
+        // 计算圆心坐标
+        double center_y = static_cast<double>(h) / 2.0;
+        double center_x = static_cast<double>(w) / 2.0;
+        // std::cout << "center_x = " << center_x << ", center_y = " << center_y << ", radii = [";
+        // for (double radius: radii)
+        //     std::cout << radius << ", ";
+        // std::cout << "]" <<std::endl;
+
+        // 创建网格坐标
+        xt::xarray<double> y = xt::arange(0, h);
+        xt::xarray<double> x = xt::arange(0, w);
+        x = xt::reshape_view(x, {1, -1});
+        y = xt::reshape_view(y, {-1, 1});
+
+        // 计算每个点到圆心的距离，并判断是否在圆内
+        xt::xarray<double> distance_to_center = (x - center_x) * (x - center_x) + (y - center_y) * (y - center_y);
+
+        xt::xarray<unsigned char> square;
+        if (radii.size() == 0){
+            square = xt::ones<unsigned char>({h, w});
+        }
+        else if (radii.size() == 1){
+            square = xt::cast<unsigned char>(distance_to_center <= radii[0] * radii[0]);
+        }
+        else{
+            assert(radii.size() % 2 == 0);
+            double r1 = radii[0];
+            double r2 = radii[1];
+            auto square1 = xt::cast<unsigned char>(distance_to_center <= r1 * r1);
+            auto square2 = xt::cast<unsigned char>(distance_to_center >= r2 * r2);
+            // [修改 1] 将 * 改为 & (逻辑与)
+            // 使用位运算 & (相当于逻辑与)，这对整数 0/1 是安全的
+            square = square1 & square2;
+            for (int i = 2; i < radii.size(); i += 2)
+            {
+                double r1 = radii[i];
+                double r2 = radii[i + 1];
+                auto square1 = xt::cast<unsigned char>(distance_to_center <= r1 * r1);
+                auto square2 = xt::cast<unsigned char>(distance_to_center >= r2 * r2);
+                // 使用位运算 | (相当于逻辑或) 和 &
+                square |= (square1 & square2);
+            }
+        }
+
+        return square;
+    }
+
+    void xsmid_test()
+    {
+        // https://gemini.google.com/app/c365370f3e1dffaf
+        // SIMD 对 bool 的支持不完整
+        // 简单来说：xtensor 在开启 xsimd 时，对 bool 类型的处理非常特殊（有时会尝试打包成 bit set，有时会提升为 int），导致在某些编译器/库版本组合下，编译器找不到如何把“布尔数组”加载到“SIMD 寄存器”的指令实现。
+        // 终极解决方案：放弃 bool，使用 unsigned char
+        std::cout << "xsmid_test start" << std::endl;
+
+        xt::xarray<double> image = xt::random::randint<int>({10, 10}, 0, 256);;
+        std::cout << "image:\n"
+                  << image << std::endl;
+
+        // 需要使用 xt::cast<double> 强制转换类型
+        xt::xarray<double> circle_mask = xt::cast<double>(create_square_with_circle(10, 10, {4.0, 2.0}));
+        std::cout << "circle_mask:\n"
+                  << circle_mask << std::endl;
+
+        xt::xarray<double> result = xt::eval(image * circle_mask);
+        std::cout << "result:\n"
+                  << result << std::endl;
+
+        std::cout << "xsmid_test end\n"
+                  << std::endl;
+    }
+
     void matrix_dot()
     {
         std::cout << "matrix_dot start" << std::endl;

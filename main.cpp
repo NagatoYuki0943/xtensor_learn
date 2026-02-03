@@ -42,6 +42,7 @@ int main(int argc, char* argv[]) {
     xt_test::meshgrid();
     xt_test::triu_tril();
     xt_test::matrix_dot();
+    xt_test::xsmid_test();
     xt_test::type_convert();
     std::cout << "---------------------------------------- xtensor test ----------------------------------------\n\n" << std::endl;
 
