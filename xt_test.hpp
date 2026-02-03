@@ -4,6 +4,7 @@
 
 #include <tuple>
 #include <xtensor.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <chrono>
 
 namespace xt_test
