@@ -4,6 +4,7 @@
 
 #include <tuple>
 #include <xtensor.hpp>
+#include <xsimd/xsimd.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <chrono>
 
@@ -1786,6 +1787,31 @@ namespace xt_test
 
         std::cout << "triu_tril end\n"
                   << std::endl;
+    }
+
+    void check_simd_status() {
+        std::cout << "================ SIMD CHECK ================" << std::endl;
+
+        // 1. 检查宏是否定义
+#ifdef XTENSOR_USE_XSIMD
+        std::cout << "[Macro] XTENSOR_USE_XSIMD is DEFINED." << std::endl;
+#else
+        std::cout << "[Macro] XTENSOR_USE_XSIMD is NOT defined!" << std::endl;
+#endif
+
+        // 2. 检查 xsimd 实际使用的架构
+        // 如果输出 "generic"，说明 SIMD 没启用或没检测到硬件
+        // 如果输出 "sse", "avx", "avx2", "neon" 等，说明启用了
+        std::cout << "[Arch] Current Architecture: " << xsimd::default_arch::name() << std::endl;
+
+        // 3. 检查内存对齐 (SIMD 的关键特征)
+        // 如果开启了 xsimd，xtensor 会使用 xsimd::aligned_allocator
+        // 如果没开启，会使用 std::allocator
+        using ArrayType = xt::xarray<double>;
+        std::cout << "[Allocator] Allocator name: "
+                << typeid(ArrayType::allocator_type).name() << std::endl;
+
+        std::cout << "============================================\n" << std::endl;
     }
 
     xt::xarray<unsigned char> create_square_with_circle(int h, int w, std::vector<double> radii)
