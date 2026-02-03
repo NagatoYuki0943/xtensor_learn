@@ -3,14 +3,7 @@
 #define XT_TEST_HPP
 
 #include <tuple>
-#include <xtensor/xarray.hpp>
-#include <xtensor/xview.hpp>
-#include <xtensor/xindex_view.hpp>
-#include <xtensor/xrandom.hpp>
-#include <xtensor/xadapt.hpp>
-#include <xtensor/xsort.hpp>
-#include <xtensor/xeval.hpp>
-#include <xtensor-blas/xlinalg.hpp>
+#include <xtensor.hpp>
 #include <chrono>
 
 namespace xt_test
