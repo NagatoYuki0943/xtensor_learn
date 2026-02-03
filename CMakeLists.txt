@@ -82,15 +82,13 @@ target_compile_options(main PRIVATE
     $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/arch:AVX2> # 为 MSVC 启用 AVX2
     # $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/arch:AVX512> # 为 MSVC 启用 AVX512
     $<$<AND:$<CONFIG:Release>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-march=native> # 其他编译器(GCC/Clang): -march=native: 自动选择最适合本机的指令集
-)
-
-# 使用链接器垃圾回收
-target_compile_options(main PRIVATE
+    # 使用链接器垃圾回收
     # 为 MSVC 设置 /Gy
     $<$<CXX_COMPILER_ID:MSVC>:/Gy>
     # 为 GCC/Clang 设置 -ffunction-sections 和 -fdata-sections
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffunction-sections -fdata-sections>
 )
+
 # 链接选项:
 target_link_options(main PRIVATE
     # 为 MSVC 设置 /OPT:REF
