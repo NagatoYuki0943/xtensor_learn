@@ -85,7 +85,7 @@ target_compile_options(main PRIVATE
     # $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/arch:AVX512> # 为 MSVC 启用 AVX512
     $<$<AND:$<CONFIG:Release>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-march=native> # 其他编译器(GCC/Clang): -march=native: 自动选择最适合本机的指令集
     # 允许 MSVC 对标量代码进行 FMA 优化
-    target_compile_options(main PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/fp:fast>)
+    $<$<CXX_COMPILER_ID:MSVC>:/fp:fast>
     # 使用链接器垃圾回收
     # 为 MSVC 设置 /Gy
     $<$<CXX_COMPILER_ID:MSVC>:/Gy>
