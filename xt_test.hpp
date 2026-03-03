@@ -105,13 +105,28 @@ namespace xt_test
                   << " sum: " << xt::sum(x) << " prod: " << xt::prod(x) << std::endl;
 
         std::cout << "maximum: " << xt::maximum(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2, 3, 4})) << std::endl;
-        // maximum: { 2.,  3.,  4.}
+        // { 2.,  3.,  4.}
+
+        std::cout << "fmax: " << xt::fmax(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2, 3, 4})) << std::endl;
+        // { 2.,  3.,  4.}
+
+        std::cout << "maximum: " << xt::maximum(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2})) << std::endl;
+        // { 2.,  2.,  3.}
+
+        std::cout << "fmax: " << xt::fmax(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2})) << std::endl;
+        // { 2.,  2.,  3.}
 
         std::cout << "minimum: " << xt::minimum(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2, 3, 4})) << std::endl;
-        // minimum: { 1.,  2.,  3.}
+        // { 1.,  2.,  3.}
+
+        std::cout << "fmin: " << xt::fmin(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2, 3, 4})) << std::endl;
+        // { 1.,  2.,  3.}
 
         std::cout << "minimum: " << xt::minimum(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2})) << std::endl;
-        // minimum: { 1.,  2.,  2.}
+        // { 1.,  2.,  2.}
+
+        std::cout << "fmin: " << xt::fmin(xt::xarray<double>({1, 2, 3}), xt::xarray<double>({2})) << std::endl;
+        // { 1.,  2.,  2.}
 
         // 指定轴
         std::cout << "arr17 amax: " << xt::amax(x) << " amax(0): " << xt::amax(x, {0}) << " amax(1): " << xt::amax(x, {1}) << std::endl;
