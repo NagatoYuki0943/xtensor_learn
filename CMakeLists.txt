@@ -66,10 +66,12 @@ target_link_libraries(main PRIVATE
 )
 
 # 添加编译选项
-target_compile_definitions(main PRIVATE HAVE_CMKL=1)
-# target_compile_definitions(main PRIVATE HAVE_CBLAS=1)
-# xtensor 使用 xsimd 加速
-target_compile_definitions(main PRIVATE XTENSOR_USE_XSIMD)
+target_compile_definitions(main PRIVATE
+    HAVE_CMKL=1
+    # HAVE_CBLAS=1
+    # xtensor 使用 xsimd 加速(windows 有 bug, linux(x64/arm) 可以用)
+    # XTENSOR_USE_XSIMD
+)
 
 # 添加编译器选项
 target_compile_options(main PRIVATE
