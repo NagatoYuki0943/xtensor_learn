@@ -69,7 +69,7 @@ target_link_libraries(main PRIVATE
 target_compile_definitions(main PRIVATE
     HAVE_CMKL=1
     # HAVE_CBLAS=1
-    # xtensor 使用 xsimd 加速(windows 有 bug, linux(x64/arm) 可以用)
+    # xtensor 使用 xsimd 加速(windows(x64) 有 bug, linux(x64/arm) 可以用)
     # XTENSOR_USE_XSIMD
 )
 
