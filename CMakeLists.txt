@@ -54,16 +54,16 @@ set(SOURCES
 add_executable(main ${SOURCES})
 
 # 添加头文件搜索路径
-target_include_directories(main PRIVATE
-    ${CMAKE_PREFIX_PATH}/include
-    include
-)
+# 只需要添加你自己项目内部的 include 文件夹
+target_include_directories(main PRIVATE "")
 
 # 添加链接目录
-target_link_directories(main PRIVATE ${CMAKE_PREFIX_PATH}/lib)
-
-# 添加链接库
-target_link_libraries(main PRIVATE MKL::MKL)
+# 现代 CMake 推荐：只要 link 了目标，头文件和编译选项会自动传递
+target_link_libraries(main PRIVATE
+    MKL::MKL
+    xtensor
+    xtensor-blas
+)
 
 # 添加编译选项
 target_compile_definitions(main PRIVATE HAVE_CMKL=1)
